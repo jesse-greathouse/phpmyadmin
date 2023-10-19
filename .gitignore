@@ -30,6 +30,7 @@ etc/php-fpm.conf.default
 etc/php-fpm.d/php-fpm.conf
 etc/php-fpm.d/www.conf.default
 etc/ssl/certs/dhparam.pem
+config.php
 
 # opt
 opt/php*/*

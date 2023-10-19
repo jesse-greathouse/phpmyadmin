@@ -21,7 +21,7 @@ my $applicationRoot = abs_path(dirname($bin));
 my $os = get_operating_system();
 my $osModule = 'PhpMyAdmin::Install::' . $os;
 
-eval "use $osModule qw(install_system_dependencies install_php install_openresty)";
+eval "use $osModule qw(install_system_dependencies install_php)";
 
 my @perlModules = (
     'JSON',
@@ -133,6 +133,41 @@ sub handle_options {
     return %options;
 }
 
+# installs Openresty.
+sub install_openresty {
+    my ($dir) = @_;
+    my @configureOpenresty = ('./configure');
+    push @configureOpenresty, '--prefix=' . $dir . '/opt/openresty';
+    push @configureOpenresty, '--with-pcre-jit';
+    push @configureOpenresty, '--with-ipv6';
+    push @configureOpenresty, '--with-http_iconv_module';
+    push @configureOpenresty, '--with-http_realip_module';
+    push @configureOpenresty, '--with-http_ssl_module';
+    push @configureOpenresty, '-j2';
+
+    my $originalDir = getcwd();
+
+    # Unpack
+    system(('bash', '-c', "tar -xzf $dir/opt/openresty-*.tar.gz -C $dir/opt/"));
+    command_result($?, $!, 'Unpack Openresty Archive...', 'tar -xzf ' . $dir . '/opt/openresty-*.tar.gz -C ' . $dir . ' /opt/');
+    
+    chdir glob("$dir/opt/openresty-*/");
+
+    # configure
+    system(@configureOpenresty);
+    command_result($?, $!, 'Configure Openresty...', \@configureOpenresty);
+
+    # make
+    system('make');
+    command_result($?, $!, 'Make Openresty...', 'make');
+
+    # install
+    system(('make', 'install'));
+    command_result($?, $!, 'Install Openresty...', 'make install');
+
+    chdir $originalDir;
+}
+
 # configures PHP.
 sub configure_php {
     my ($dir) = @_;
@@ -183,6 +218,7 @@ sub install_phpmyadmin {
     my ($dir) = @_;
     my $webDir = "$dir/web/";
     my $configFile = "$dir/etc/config.php";
+    my $configSymLink = "$webDir/config.php";
 
     # If web/ exists, delete it.
     if (-d $webDir) {
@@ -197,7 +233,13 @@ sub install_phpmyadmin {
 
     # If etc/config.php exists, copy it to web/.
     if (-e $configFile) {
-        copy($configFile, "$webDir/config.php");
+        my ($dir) = @_;
+
+        if (-e $configFile) {
+            unlink $configSymLink;
+        }
+
+        symlink($configFile, $configSymLink);
     }
 }
 
@@ -207,6 +249,6 @@ sub cleanup {
     my $openrestyBuildDir = glob("$dir/opt/openresty-*/");
     system(('bash', '-c', "rm -rf $phpBuildDir"));
     command_result($?, $!, 'Remove PHP Build Dir...', "rm -rf $phpBuildDir");
-    # system(('bash', '-c', "rm -rf $openrestyBuildDir"));
-    # command_result($?, $!, 'Remove Openresty Build Dir...', "rm -rf $openrestyBuildDir");
+    system(('bash', '-c', "rm -rf $openrestyBuildDir"));
+    command_result($?, $!, 'Remove Openresty Build Dir...', "rm -rf $openrestyBuildDir");
 }

@@ -8,7 +8,7 @@ use lib(dirname(abs_path(__FILE__))  . "/modules");
 use PhpMyAdmin::Utility qw(command_result);
 use Exporter 'import';
 
-our @EXPORT_OK = qw(install_system_dependencies install_php install_openresty);
+our @EXPORT_OK = qw(install_system_dependencies install_php);
 
 my @systemDependencies = (
     'supervisor',
@@ -73,43 +73,6 @@ sub install_system_dependencies {
 
     system(@cmd);
     command_result($?, $!, "Installed system dependencies...", \@cmd);
-}
-
-# installs Openresty.
-sub install_openresty {
-    my ($dir) = @_;
-    my @configureOpenresty = ('./configure');
-    push @configureOpenresty, '--with-cc-opt="-I/usr/local/include -I/usr/local/opt/openssl/include"';
-    push @configureOpenresty, '--with-ld-opt="-L/usr/local/lib -L/usr/local/opt/openssl/lib"';
-    push @configureOpenresty, '--prefix=' . $dir . '/opt/openresty';
-    push @configureOpenresty, '--with-pcre-jit';
-    push @configureOpenresty, '--with-ipv6';
-    push @configureOpenresty, '--with-http_iconv_module';
-    push @configureOpenresty, '--with-http_realip_module';
-    push @configureOpenresty, '--with-http_ssl_module';
-    push @configureOpenresty, '-j2';
-
-    my $originalDir = getcwd();
-
-    # Unpack
-    system(('bash', '-c', "tar -xzf $dir/opt/openresty-*.tar.gz -C $dir/opt/"));
-    command_result($?, $!, 'Unpack Openresty Archive...', 'tar -xzf ' . $dir . '/opt/openresty-*.tar.gz -C ' . $dir . ' /opt/');
-    
-    chdir glob("$dir/opt/openresty-*/");
-
-    # configure
-    system(@configureOpenresty);
-    command_result($?, $!, 'Configure Openresty...', \@configureOpenresty);
-
-    # make
-    system('make');
-    command_result($?, $!, 'Make Openresty...', 'make');
-
-    # install
-    system(('make', 'install'));
-    command_result($?, $!, 'Install Openresty...', 'make install');
-
-    chdir $originalDir;
 }
 
 # installs PHP.
