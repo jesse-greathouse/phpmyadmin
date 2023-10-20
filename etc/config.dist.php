@@ -25,21 +25,21 @@ $i = 0;
  */
 $i++;
 /* Authentication type */
-$cfg['Servers'][$i]['auth_type'] = 'cookie';
+$cfg['Servers'][$i]['auth_type'] = '__AUTH_TYPE__';
 /* Server parameters */
-$cfg['Servers'][$i]['host'] = 'localhost';
+$cfg['Servers'][$i]['host'] = '__HOST__';
 $cfg['Servers'][$i]['compress'] = false;
-$cfg['Servers'][$i]['AllowNoPassword'] = false;
+$cfg['Servers'][$i]['AllowNoPassword'] = filter_var('__ALLOW_NO_PASSWORD__', FILTER_VALIDATE_BOOLEAN);
 
 /**
  * phpMyAdmin configuration storage settings.
  */
 
 /* User used to manipulate with storage */
-// $cfg['Servers'][$i]['controlhost'] = '';
-// $cfg['Servers'][$i]['controlport'] = '';
-// $cfg['Servers'][$i]['controluser'] = 'pma';
-// $cfg['Servers'][$i]['controlpass'] = 'pmapass';
+$cfg['Servers'][$i]['controlhost'] = '__CONTROL_HOST__';
+$cfg['Servers'][$i]['controlport'] = '__CONTROL_PORT__';
+$cfg['Servers'][$i]['controluser'] = '__CONTROL_USER__';
+$cfg['Servers'][$i]['controlpass'] = '__CONTROL_BASSWORD__';
 
 /* Storage database and tables */
 // $cfg['Servers'][$i]['pmadb'] = 'phpmyadmin';
@@ -70,8 +70,8 @@ $cfg['Servers'][$i]['AllowNoPassword'] = false;
 /**
  * Directories for saving/loading files from server
  */
-$cfg['UploadDir'] = '';
-$cfg['SaveDir'] = '';
+$cfg['UploadDir'] = '__UPLOAD_DIR__';
+$cfg['SaveDir'] = '__SAVE_DIR__';
 
 /**
  * Whether to display icons or text or both icons and text in table row

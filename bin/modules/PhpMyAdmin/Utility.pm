@@ -9,10 +9,10 @@ our @EXPORT_OK = qw(
   get_operating_system
   read_file
   write_file
+  write_config_file
   trim
   splash
   str_replace_in_file
-  generate_rand_str
 );
 
 1;
@@ -87,36 +87,24 @@ sub command_result {
     }
 }
 
-sub generate_rand_str {
-    my ($length) = @_;
-
-    if (!defined $length) {
-        $length = 64;
-    }
-
-    my @set = ('0' ..'9', 'A' .. 'F');
-    my $str = join '' => map $set[rand @set], 1 .. $length;
-    return $str;
-}
-
 # Prints a spash screen message.
 sub splash {
   print (''."\n");
   print ('+--------------------------------------------------------------------------------------+'."\n");
-  print ('| Thank you for choosing mcol                                                    |'."\n");
+  print ('| Thank you for choosing phpmyadmin                                                    |'."\n");
   print ('+--------------------------------------------------------------------------------------+'."\n");
-  print ('| Copyright (c) 2023 Jesse Greathouse (https://github.com/jesse-greathouse/mcol)       |'."\n");
+  print ('| Copyright (c) 2023 Jesse Greathouse (https://github.com/jesse-greathouse/phpmyadmin) |'."\n");
   print ('+--------------------------------------------------------------------------------------+'."\n");
-  print ('| mcol is free software: you can redistribute it and/or modify it under the      |'."\n");
+  print ('| phpmyadmin is free software: you can redistribute it and/or modify it under the      |'."\n");
   print ('| terms of thethe Free Software Foundation, either version 3 of the License, or GNU    |'."\n");
   print ('| General Public License as published by (at your option) any later version.           |'."\n");
   print ('|                                                                                      |'."\n");
-  print ('| mcol is distributed in the hope that it will be useful, but WITHOUT ANY        |'."\n");
+  print ('| phpmyadmin is distributed in the hope that it will be useful, but WITHOUT ANY        |'."\n");
   print ('| WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      |'."\n");
   print ('| PARTICULAR PURPOSE.  See the GNU General Public License for more details.            |'."\n");
   print ('|                                                                                      |'."\n");
   print ('| You should have received a copy of the GNU General Public License along with         |'."\n");
-  print ('| mcol. If not, see <http://www.gnu.org/licenses/>.                              |'."\n");
+  print ('| phpmyadmin. If not, see <http://www.gnu.org/licenses/>.                              |'."\n");
   print ('+--------------------------------------------------------------------------------------+'."\n");
   print ('| Author: Jesse Greathouse <jesseg@wheelpros.com>                                      |'."\n");
   print ('+--------------------------------------------------------------------------------------+'."\n");

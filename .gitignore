@@ -54,7 +54,7 @@ etc/nginx/force-ssl.conf
 etc/nginx/force-ssl.docker.conf
 etc/*.service
 etc/*.conf
-etc/init.d/*.sh
+etc/init.d/*
 etc/*.plist
 etc/ssl/openssl.cnf
 etc/ssl/CA/*
@@ -87,7 +87,7 @@ tmp/*
 node_modules/
 
 # misc
-.mcol-cfg.yml
+.phpmyadmin-cfg.yml
 
 # vendor
 vendor/

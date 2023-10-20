@@ -3,23 +3,27 @@
 package PhpMyAdmin::Config;
 use strict;
 use File::Basename;
+use File::Copy;
 use Cwd qw(getcwd abs_path);
 use Config::File qw(read_config_file);
 use YAML::XS qw(LoadFile DumpFile);
 use POSIX qw(strftime);
 use Exporter 'import';
 use lib(dirname(abs_path(__FILE__))  . "/../modules");
-use PhpMyAdmin::Utility qw(write_file);
+use PhpMyAdmin::Utility qw(
+    str_replace_in_file
+    write_file
+);
 our @EXPORT_OK = qw(
     get_configuration
     save_configuration
     parse_env_file
-    write_env_file
+    write_config_file
 );
 
 my $bin = abs_path(dirname(__FILE__) . '/../../');
 my $applicationRoot = abs_path(dirname($bin));
-my $configurationFileName = '.mcol-cfg.yml';
+my $configurationFileName = '.phpmyadmin-cfg.yml';
 
 if (! -d $applicationRoot) {
     die "Directory: \"$applicationRoot\" doesn't exist\n $!";
@@ -60,24 +64,18 @@ sub save_configuration {
     %cfg = LoadFile("$applicationRoot/$configurationFileName");
 }
 
-sub parse_env_file {
-    my ($file) = @_;
-    return read_config_file($file);
-}
+sub write_config_file {
+    my ($templateFile, $configFile, %cfg) = @_;
 
-sub write_env_file {
-    my ($filename, %config) = @_;
-
-    # remove the file if it already exists
-    if (-e $filename) {
-         unlink $filename;
+    if (-e $configFile) {
+        unlink $configFile;
     }
 
-    my $content = '';
-    foreach my $key (keys %config)
-    {
-        $content = $content . $key . "=" . $config{$key} . "\n";
-    }
+    copy($templateFile, $configFile) or die "Copy $configFile failed: $!";
 
-    write_file($filename, $content);
+    keys %cfg; # reset the internal iterator so a prior each() doesn't affect the loop
+    while(my($k, $v) = each %cfg) { 
+        my $m = '__' . $k . '__';
+        str_replace_in_file($m, $v, $configFile);
+    }
 }

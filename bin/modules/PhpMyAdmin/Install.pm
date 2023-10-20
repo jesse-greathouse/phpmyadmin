@@ -26,6 +26,7 @@ eval "use $osModule qw(install_system_dependencies install_php)";
 my @perlModules = (
     'JSON',
     'Archive::Zip',
+    'Bytes::Random::Secure',
     'Config::File',
     'LWP::Protocol::https',
     'LWP::UserAgent',
@@ -48,7 +49,7 @@ my @perlModules = (
 
 # Performs the install routine.
 sub install {
-    printf "Installing mcol at: $applicationRoot\n",
+    printf "Installing phpmyadmin at: $applicationRoot\n",
 
     my %options = handle_options();
 

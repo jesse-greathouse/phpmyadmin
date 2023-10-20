@@ -3,6 +3,7 @@
 package PhpMyAdmin::Configure;
 use strict;
 use File::Basename;
+use Bytes::Random::Secure qw(random_bytes_hex);
 use Cwd qw(getcwd abs_path);
 use List::Util 1.29 qw( pairs );
 use Exporter 'import';
@@ -14,10 +15,9 @@ use lib(dirname(abs_path(__FILE__))  . "/../modules");
 use PhpMyAdmin::Config qw(
     get_configuration
     save_configuration
-    parse_env_file
-    write_env_file
+    write_config_file
 );
-use PhpMyAdmin::Utility qw(splash generate_rand_str);
+use PhpMyAdmin::Utility qw(splash);
 
 use Data::Dumper;
 
@@ -25,30 +25,68 @@ our @EXPORT_OK = qw(configure);
 
 warn $@ if $@; # handle exception
 
-my $bin = abs_path(dirname(__FILE__) . '/../../');
-my $applicationRoot = abs_path(dirname($bin));
-my $lumenEnvFile = "$applicationRoot/src/.env";
+# Folder Paths
+my $secret = random_bytes_hex(32);
+my $binDir = abs_path(dirname(__FILE__) . '/../../');
+my $applicationRoot = abs_path(dirname($binDir));
+my $webDir = "$applicationRoot/web";
+my $varDir = "$applicationRoot/var";
+my $etcDir = "$applicationRoot/etc";
+my $logDir = "$varDir/log";
+my $uploadDir = "$varDir/upload";
+my $saveDir = "$varDir/cache";
+
+# Files and Dist
+my $errorLog = "$logDir/error.log";
+my $runScript = "$binDir/phpmyadmin";
+my $sslCertificate = "$etcDir/ssl/certs/phpmyadmin.cert";
+my $sslKey = "$etcDir/ssl/private/phpmyadmin.key";
+my $serviceRunScript = "$binDir/phpmyadmind";
+
+my $phpMyAdminConfDist = "$etcDir/config.php.dist";
+my $phpMyAdminConfFile = "$etcDir/config.php";
+
+my $initdDist = "$etcDir/init.d/init-template.sh.dist";
+my $initdFile = "$etcDir/init.d/phpmyadmin";
+
+my $forceSslDist = "$etcDir/nginx/force-ssl.dist.conf";
+my $forceSslFile = "$etcDir/nginx/force-ssl.conf";
+
+my $sslParamsDist = "$etcDir/nginx/ssl-params.dist.conf";
+my $sslParamsFile = "$etcDir/nginx/ssl-params.conf";
+
+my $nginxConfDist = "$etcDir/nginx/nginx.dist.conf";
+my $nginxConfFile = "$etcDir/nginx/nginx.conf";
+
+my $opensslConfDist = "$etcDir/ssl/openssl.dist.conf";
+my $opensslConfFile = "$etcDir/ssl/openssl.conf";
+
+# Get Configuration and Defaults
 my %cfg = get_configuration();
-my $defaultKey = generate_rand_str();
 
 my %defaults = (
-    lumen => {
-        APP_NAME                => 'mcol',
-        APP_ENV                 => 'local',
-        APP_KEY                 => $defaultKey,
-        APP_DEBUG               => 'true',
-        APP_URL                 => 'http://localhost',
-        APP_TIMEZONE            => 'UTC',
-        LOG_CHANNEL             => 'stack',
-        LOG_SLACK_WEBHOOK_URL   => 'none',
-        DB_CONNECTION           => 'mysql',
-        DB_HOST                 => '127.0.0.1',
-        DB_PORT                 => '3306',
-        DB_DATABASE             => 'mcol',
-        DB_USERNAME             => 'mcol',
-        DB_PASSWORD             => 'mcol',
-        CACHE_DRIVER            => 'file',
-        QUEUE_CONNECTION        => 'sync',
+    phpmyadmin => {
+        APP_NAME                => 'phpmyadmin',
+        CONTROL_HOST            => '127.0.0.1',
+        CONTROL_PORT            => '3306',
+        CONTROL_USER            => 'phpmyadmin',
+        CONTROL_PASSWORD        => 'password',
+        AUTH_TYPE               => 'cookie',
+        HOST                    => 'localhost',
+        ALLOW_NO_PASSWORD       => 'no',
+        BLOWFISH_SECRET         => $secret,
+        UPLOAD_DIR              => $uploadDir,
+        SAVE_DIR                => $saveDir,
+    },
+    nginx => {
+        DOMAINS                 => '127.0.0.1',
+        IS_SSL                  => 'no',
+        PORT                    => '8080',
+        SSL_CERT                => $sslCertificate,
+        SSL_KEY                 => $sslKey,
+    },
+    redis => {
+        REDIS_HOST              => 'localhost',
     }
 );
 
@@ -70,79 +108,127 @@ sub configure {
     print (''."\n");
 
     request_user_input();
+
+    merge_defaults();
+
     save_configuration(%cfg);
-    write_lumen_env();
+
+    # Create configuration files
+    write_initd_file();
+}
+
+sub write_initd_file{
+    my %c = %{$cfg{nginx}};
+    $c{'APP_NAME'} = $cfg{phpmyadmin}{'APP_NAME'};
+    $c{'START_SCRIPT'} = $serviceRunScript;
+    write_config_file($initdDist, $initdFile, %c);
 }
 
 # Runs the user through a series of setup config questions.
 # Confirms the answers.
 # Returns Hash Table
 sub request_user_input {
-    merge_lumen_env();
-
     # APP_NAME
-    input('lumen', 'APP_NAME', 'App Name');
+    input('phpmyadmin', 'APP_NAME', 'Application Name');
+
+    # CONTROL_HOST
+    input('phpmyadmin', 'CONTROL_HOST', 'Database Host');
+
+    # CONTROL_PORT
+    input('phpmyadmin', 'CONTROL_PORT', 'Database Port');
+
+    # CONTROL_USER
+    input('phpmyadmin', 'CONTROL_USER', 'Database User');
+
+    # CONTROL_BASSWORD
+    input('phpmyadmin', 'CONTROL_PASSWORD', 'Database Password');
+
+    # AUTH_TYPE
+    input('phpmyadmin', 'AUTH_TYPE', 'Auth Type');
     
-    # APP_ENV
-    input('lumen', 'APP_ENV', 'App Environment');
+    # HOST
+    input('phpmyadmin', 'HOST', 'Host');
+
+    # BLOWFISH_SECRET
+    input('phpmyadmin', 'BLOWFISH_SECRET', 'Blowfish Secret (Encryption Key)');
+
+    # ALLOW_NO_PASSWORD
+    input_boolean('phpmyadmin', 'ALLOW_NO_PASSWORD', 'Allow No Password');
+
+    # UPLOAD_DIR
+    input('phpmyadmin', 'UPLOAD_DIR', 'Upload Directory');
+
+    # SAVE_DIR
+    input('phpmyadmin', 'SAVE_DIR', 'Save Directory');
+
+    # DOMAINS
+    input('nginx', 'DOMAINS', 'Web Domains');
+
+    # SSL
+    input_boolean('nginx', 'IS_SSL', 'Use SSL (https)');
     
-    # APP_KEY
-    input('lumen', 'APP_KEY', 'App Key (Security String)');
+    # PORT
+    input('nginx', 'PORT', 'Web Port');
+
+    # SSL_CERT
+    input('nginx', 'SSL_CERT', 'SSL Certificate Path');
+
+    # SSL_KEY
+    input('nginx', 'SSL_KEY', 'SSL Key Path');
     
-    # APP_DEBUG
-    input_boolean('lumen', 'APP_DEBUG', 'App Debug Flag');
-    
-    # APP_URL
-    input('lumen', 'APP_URL', 'App Url');
-    
-    # APP_TIMEZONE
-    input('lumen', 'APP_TIMEZONE', 'App Timezone');
-    
-    # LOG_CHANNEL
-    input('lumen', 'LOG_CHANNEL', 'Log Channel');
-    
-    # LOG_SLACK_WEBHOOK_URL
-    input('lumen', 'LOG_SLACK_WEBHOOK_URL', 'Slack Webhook Url');
-    
-    # DB_CONNECTION
-    input('lumen', 'DB_CONNECTION', 'Database Connection (driver)');
-    
-    # DB_HOST
-    input('lumen', 'DB_HOST', 'Database Hostname');
-    
-    # DB_PORT
-    input('lumen', 'DB_PORT', 'Database Port');
-    
-    # DB_DATABASE
-    input('lumen', 'DB_DATABASE', 'Database Schema Name');
-    
-    # DB_USERNAME
-    input('lumen', 'DB_USERNAME', 'Database Username');
-    
-    # DB_PASSWORD
-    input('lumen', 'DB_PASSWORD', 'Database Password');
-    
-    # CACHE_DRIVER
-    input('lumen', 'CACHE_DRIVER', 'Cache Driver');
-    
-    # QUEUE_CONNECTION
-    input('lumen', 'QUEUE_CONNECTION', 'Queue Connection');
+    # REDIS_HOST
+    input('redis', 'REDIS_HOST', 'Redis Host');
 }
 
-sub merge_lumen_env {
-    if (-e $lumenEnvFile) {
-        my $env = parse_env_file($lumenEnvFile);
+sub merge_defaults {
 
-        foreach my $key (keys %$env) {
-            $cfg{lumen}{$key} = $env->{$key};
-        }
-
-        save_configuration(%cfg);
+    if (!exists($cfg{phpmyadmin}{USER})) {
+        $cfg{phpmyadmin}{USER} = $ENV{"LOGNAME"};
     }
-}
 
-sub write_lumen_env{
-    write_env_file($lumenEnvFile, %{$cfg{lumen}});
+        if (!exists($cfg{nginx}{USER})) {
+        $cfg{nginx}{USER} = $ENV{"LOGNAME"};
+    }
+
+    if (!exists($cfg{nginx}{SESSION_SECRET})) {
+        $cfg{nginx}{SESSION_SECRET} = $secret;
+    }
+
+    if (!exists($cfg{nginx}{LOG})) {
+        $cfg{nginx}{LOG} = $errorLog;
+    }
+
+    if (!exists($cfg{nginx}{DIR})) {
+        $cfg{nginx}{DIR} = $applicationRoot;
+    }
+
+    if (!exists($cfg{nginx}{VAR})) {
+        $cfg{nginx}{VAR} = $varDir;
+    }
+
+    if (!exists($cfg{nginx}{ETC})) {
+        $cfg{nginx}{ETC} = $etcDir;
+    }
+
+    if (!exists($cfg{nginx}{WEB})) {
+        $cfg{nginx}{WEB} = $webDir;
+    }
+
+    if (!exists($cfg{nginx}{SSL})) {
+        $cfg{nginx}{SSL} = '';
+    }
+
+    if (!exists($cfg{nginx}{SSL_CERT_LINE})) {
+        $cfg{nginx}{SSL_CERT_LINE} = '';
+    }
+
+    if (!exists($cfg{nginx}{SSL_KEY_LINE})) {
+        $cfg{nginx}{SSL_KEY_LINE} = '';
+    }
+
+    if (!exists($cfg{nginx}{INCLUDE_FORCE_SSL_LINE})) {
+        $cfg{nginx}{INCLUDE_FORCE_SSL_LINE} = '';
+    }
 }
 
 sub input {
