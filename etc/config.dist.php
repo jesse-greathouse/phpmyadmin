@@ -72,6 +72,7 @@ $cfg['Servers'][$i]['controlpass'] = '__CONTROL_PASSWORD__';
  */
 $cfg['UploadDir'] = '__UPLOAD_DIR__';
 $cfg['SaveDir'] = '__SAVE_DIR__';
+$cfg['TempDir'] = '__TEMP_DIR__';
 
 /**
  * Whether to display icons or text or both icons and text in table row
@@ -158,3 +159,5 @@ $cfg['SaveDir'] = '__SAVE_DIR__';
  * You can find more configuration options in the documentation
  * in the doc/ folder or at <https://docs.phpmyadmin.net/>.
  */
+
+ $cfg['OBGzip'] = true;

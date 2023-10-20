@@ -27,6 +27,7 @@ my $applicationRoot = abs_path(dirname($binDir));
 my $webDir = "$applicationRoot/web";
 my $varDir = "$applicationRoot/var";
 my $etcDir = "$applicationRoot/etc";
+my $tmpDir = "$applicationRoot/tmp";
 my $logDir = "$varDir/log";
 my $uploadDir = "$varDir/upload";
 my $saveDir = "$varDir/cache";
@@ -73,9 +74,6 @@ my %defaults = (
         AUTH_TYPE               => 'cookie',
         HOST                    => 'localhost',
         ALLOW_NO_PASSWORD       => 'no',
-        BLOWFISH_SECRET         => $secret,
-        UPLOAD_DIR              => $uploadDir,
-        SAVE_DIR                => $saveDir,
     },
     nginx => {
         DOMAINS                 => '127.0.0.1',
@@ -186,7 +184,7 @@ sub request_user_input {
     # CONTROL_USER
     input('phpmyadmin', 'CONTROL_USER', 'Database User');
 
-    # CONTROL_BASSWORD
+    # CONTROL_PASSWORD
     input('phpmyadmin', 'CONTROL_PASSWORD', 'Database Password');
 
     # AUTH_TYPE
@@ -200,12 +198,6 @@ sub request_user_input {
 
     # ALLOW_NO_PASSWORD
     input_boolean('phpmyadmin', 'ALLOW_NO_PASSWORD', 'Allow No Password');
-
-    # UPLOAD_DIR
-    input('phpmyadmin', 'UPLOAD_DIR', 'Upload Directory');
-
-    # SAVE_DIR
-    input('phpmyadmin', 'SAVE_DIR', 'Save Directory');
 
     # DOMAINS
     input('nginx', 'DOMAINS', 'Web Domains');
@@ -245,6 +237,18 @@ sub merge_defaults {
 
     if (!exists($cfg{phpmyadmin}{USER})) {
         $cfg{phpmyadmin}{USER} = $ENV{"LOGNAME"};
+    }
+
+    if (!exists($cfg{phpmyadmin}{UPLOAD_DIR})) {
+        $cfg{phpmyadmin}{UPLOAD_DIR} = $uploadDir;
+    }
+
+    if (!exists($cfg{phpmyadmin}{SAVE_DIR})) {
+        $cfg{phpmyadmin}{SAVE_DIR} = $saveDir;
+    }
+
+    if (!exists($cfg{phpmyadmin}{TEMP_DIR})) {
+        $cfg{phpmyadmin}{TEMP_DIR} = $tmpDir;
     }
 
     if (!exists($cfg{nginx}{USER})) {
