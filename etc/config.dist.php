@@ -39,7 +39,7 @@ $cfg['Servers'][$i]['AllowNoPassword'] = filter_var('__ALLOW_NO_PASSWORD__', FIL
 $cfg['Servers'][$i]['controlhost'] = '__CONTROL_HOST__';
 $cfg['Servers'][$i]['controlport'] = '__CONTROL_PORT__';
 $cfg['Servers'][$i]['controluser'] = '__CONTROL_USER__';
-$cfg['Servers'][$i]['controlpass'] = '__CONTROL_BASSWORD__';
+$cfg['Servers'][$i]['controlpass'] = '__CONTROL_PASSWORD__';
 
 /* Storage database and tables */
 // $cfg['Servers'][$i]['pmadb'] = 'phpmyadmin';

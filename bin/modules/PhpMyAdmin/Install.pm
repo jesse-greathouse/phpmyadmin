@@ -234,12 +234,7 @@ sub install_phpmyadmin {
 
     # If etc/config.php exists, copy it to web/.
     if (-e $configFile) {
-        my ($dir) = @_;
-
-        if (-e $configFile) {
-            unlink $configSymLink;
-        }
-
+        unlink $configSymLink;
         symlink($configFile, $configSymLink);
     }
 }

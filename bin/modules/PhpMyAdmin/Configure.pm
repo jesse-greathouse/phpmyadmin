@@ -43,8 +43,9 @@ my $sslCertificate = "$etcDir/ssl/certs/phpmyadmin.cert";
 my $sslKey = "$etcDir/ssl/private/phpmyadmin.key";
 my $serviceRunScript = "$binDir/phpmyadmind";
 
-my $phpMyAdminConfDist = "$etcDir/config.php.dist";
+my $phpMyAdminConfDist = "$etcDir/config.dist.php";
 my $phpMyAdminConfFile = "$etcDir/config.php";
+my $phpMyAdminConfSymlink = "$webDir/config.php";
 
 my $initdDist = "$etcDir/init.d/init-template.sh.dist";
 my $initdFile = "$etcDir/init.d/phpmyadmin";
@@ -114,14 +115,26 @@ sub configure {
     save_configuration(%cfg);
 
     # Create configuration files
-    write_initd_file();
+    write_phpmyadmin_conf();
+    write_initd_script();
 }
 
-sub write_initd_file{
+sub write_phpmyadmin_conf {
+    my %c = %{$cfg{phpmyadmin}};
+    write_config_file($phpMyAdminConfDist, $phpMyAdminConfFile, %c);
+
+    unless (-e $phpMyAdminConfSymlink) {
+        symlink($phpMyAdminConfFile, $phpMyAdminConfSymlink);
+    }
+}
+
+sub write_initd_script {
+    my $mode = 0755;
     my %c = %{$cfg{nginx}};
     $c{'APP_NAME'} = $cfg{phpmyadmin}{'APP_NAME'};
     $c{'START_SCRIPT'} = $serviceRunScript;
     write_config_file($initdDist, $initdFile, %c);
+    chmod $mode, $initdFile;
 }
 
 # Runs the user through a series of setup config questions.
