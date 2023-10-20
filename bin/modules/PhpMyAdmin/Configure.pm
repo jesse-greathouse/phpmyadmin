@@ -56,11 +56,11 @@ my $forceSslFile = "$etcDir/nginx/force-ssl.conf";
 my $sslParamsDist = "$etcDir/nginx/ssl-params.dist.conf";
 my $sslParamsFile = "$etcDir/nginx/ssl-params.conf";
 
+my $opensslConfDist = "$etcDir/ssl/openssl.dist.cnf";
+my $opensslConfFile = "$etcDir/ssl/openssl.cnf";
+
 my $nginxConfDist = "$etcDir/nginx/nginx.dist.conf";
 my $nginxConfFile = "$etcDir/nginx/nginx.conf";
-
-my $opensslConfDist = "$etcDir/ssl/openssl.dist.conf";
-my $opensslConfFile = "$etcDir/ssl/openssl.conf";
 
 # Get Configuration and Defaults
 my %cfg = get_configuration();
@@ -117,6 +117,10 @@ sub configure {
     # Create configuration files
     write_phpmyadmin_conf();
     write_initd_script();
+    write_force_ssl_conf();
+    write_ssl_params_conf();
+    write_openssl_conf();
+    write_nginx_conf();
 }
 
 sub write_phpmyadmin_conf {
@@ -137,6 +141,26 @@ sub write_initd_script {
 
     write_config_file($initdDist, $initdFile, %c);
     chmod $mode, $initdFile;
+}
+
+sub write_force_ssl_conf {
+    my %c = %{$cfg{nginx}};
+    write_config_file($forceSslDist, $forceSslFile, %c);
+}
+
+sub write_ssl_params_conf {
+    my %c = %{$cfg{nginx}};
+    write_config_file($sslParamsDist, $sslParamsFile, %c);
+}
+
+sub write_openssl_conf {
+    my %c = %{$cfg{nginx}};
+    write_config_file($opensslConfDist, $opensslConfFile, %c);
+}
+
+sub write_nginx_conf {
+    my %c = %{$cfg{nginx}};
+    write_config_file($nginxConfDist, $nginxConfFile, %c);
 }
 
 # Runs the user through a series of setup config questions.
@@ -181,15 +205,30 @@ sub request_user_input {
 
     # SSL
     input_boolean('nginx', 'IS_SSL', 'Use SSL (https)');
-    
-    # PORT
-    input('nginx', 'PORT', 'Web Port');
 
-    # SSL_CERT
-    input('nginx', 'SSL_CERT', 'SSL Certificate Path');
+    if ('true' eq $cfg{nginx}{IS_SSL}) {
+        $cfg{nginx}{SSL} = 'ssl';
+        $cfg{nginx}{PORT} = '443';
 
-    # SSL_KEY
-    input('nginx', 'SSL_KEY', 'SSL Key Path');
+        # SSL_CERT
+        input('nginx', 'SSL_CERT', 'SSL Certificate Path');
+        $cfg{nginx}{SSL_CERT_LINE} = 'ssl_certificate ' . $cfg{nginx}{SSL_CERT};
+
+        # SSL_KEY
+        input('nginx', 'SSL_KEY', 'SSL Key Path');
+        $cfg{nginx}{SSL_CERT_LINE} = 'ssl_certificate_key ' . $cfg{nginx}{SSL_KEY};
+
+        $cfg{nginx}{INCLUDE_FORCE_SSL_LINE} = "include $etcDir/nginx/force-ssl.conf";
+
+    } else {
+        # PORT
+        input('nginx', 'PORT', 'Web Port');
+
+        $cfg{nginx}{SSL} = '';
+        $cfg{nginx}{SSL_CERT_LINE} = '';
+        $cfg{nginx}{SSL_KEY_LINE} = '';
+        $cfg{nginx}{INCLUDE_FORCE_SSL_LINE} = '';
+    }
     
     # REDIS_HOST
     input('redis', 'REDIS_HOST', 'Redis Host');
@@ -227,22 +266,6 @@ sub merge_defaults {
 
     if (!exists($cfg{nginx}{WEB})) {
         $cfg{nginx}{WEB} = $webDir;
-    }
-
-    if (!exists($cfg{nginx}{SSL})) {
-        $cfg{nginx}{SSL} = '';
-    }
-
-    if (!exists($cfg{nginx}{SSL_CERT_LINE})) {
-        $cfg{nginx}{SSL_CERT_LINE} = '';
-    }
-
-    if (!exists($cfg{nginx}{SSL_KEY_LINE})) {
-        $cfg{nginx}{SSL_KEY_LINE} = '';
-    }
-
-    if (!exists($cfg{nginx}{INCLUDE_FORCE_SSL_LINE})) {
-        $cfg{nginx}{INCLUDE_FORCE_SSL_LINE} = '';
     }
 }
 

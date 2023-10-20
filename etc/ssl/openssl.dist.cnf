@@ -5,11 +5,11 @@
 
 # This definition stops the following lines choking if HOME isn't
 # defined.
-HOME				= __ETC__
-RANDFILE		= $ENV::HOME/.rnd
+HOME			= __ETC__
+RANDFILE		= $ENV::HOME/ssl/.rnd
 
 # Extra OBJECT IDENTIFIER info:
-#oid_file		= $ENV::HOME/.oid
+#oid_file		= $ENV::HOME/ssl/.oid
 oid_section		= new_oids
 
 # To use this configuration file with the "-extfile" option of the
