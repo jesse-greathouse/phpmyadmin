@@ -131,8 +131,10 @@ sub write_phpmyadmin_conf {
 sub write_initd_script {
     my $mode = 0755;
     my %c = %{$cfg{nginx}};
+
     $c{'APP_NAME'} = $cfg{phpmyadmin}{'APP_NAME'};
     $c{'START_SCRIPT'} = $serviceRunScript;
+
     write_config_file($initdDist, $initdFile, %c);
     chmod $mode, $initdFile;
 }
