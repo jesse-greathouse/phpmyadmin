@@ -3,9 +3,8 @@
 package PhpMyAdmin::Configure;
 use strict;
 use File::Basename;
-use Bytes::Random::Secure qw(random_bytes_hex);
 use Cwd qw(getcwd abs_path);
-use List::Util 1.29 qw( pairs );
+use List::Util qw( pairs );
 use Exporter 'import';
 use Scalar::Util qw(looks_like_number);
 use Term::Prompt;
@@ -19,14 +18,10 @@ use PhpMyAdmin::Config qw(
 );
 use PhpMyAdmin::Utility qw(splash);
 
-use Data::Dumper;
-
 our @EXPORT_OK = qw(configure);
 
 warn $@ if $@; # handle exception
 
-# Folder Paths
-my $secret = random_bytes_hex(32);
 my $binDir = abs_path(dirname(__FILE__) . '/../../');
 my $applicationRoot = abs_path(dirname($binDir));
 my $webDir = "$applicationRoot/web";
@@ -35,13 +30,13 @@ my $etcDir = "$applicationRoot/etc";
 my $logDir = "$varDir/log";
 my $uploadDir = "$varDir/upload";
 my $saveDir = "$varDir/cache";
+my $secret = `$binDir/php -r "echo bin2hex(random_bytes(16));"`;
 
 # Files and Dist
 my $errorLog = "$logDir/error.log";
-my $runScript = "$binDir/phpmyadmin";
+my $runScript = "$binDir/run";
 my $sslCertificate = "$etcDir/ssl/certs/phpmyadmin.cert";
 my $sslKey = "$etcDir/ssl/private/phpmyadmin.key";
-my $serviceRunScript = "$binDir/phpmyadmind";
 
 my $phpMyAdminConfDist = "$etcDir/config.dist.php";
 my $phpMyAdminConfFile = "$etcDir/config.php";
@@ -49,6 +44,9 @@ my $phpMyAdminConfSymlink = "$webDir/config.php";
 
 my $initdDist = "$etcDir/init.d/init-template.sh.dist";
 my $initdFile = "$etcDir/init.d/phpmyadmin";
+
+my $phpFpmDist = "$etcDir/php-fpm.d/php-fpm.dist.conf";
+my $phpFpmFile = "$etcDir/php-fpm.d/php-fpm.conf";
 
 my $forceSslDist = "$etcDir/nginx/force-ssl.dist.conf";
 my $forceSslFile = "$etcDir/nginx/force-ssl.conf";
@@ -117,6 +115,7 @@ sub configure {
     # Create configuration files
     write_phpmyadmin_conf();
     write_initd_script();
+    write_phpfpm_conf();
     write_force_ssl_conf();
     write_ssl_params_conf();
     write_openssl_conf();
@@ -137,10 +136,18 @@ sub write_initd_script {
     my %c = %{$cfg{nginx}};
 
     $c{'APP_NAME'} = $cfg{phpmyadmin}{'APP_NAME'};
-    $c{'START_SCRIPT'} = $serviceRunScript;
+    $c{'START_SCRIPT'} = $runScript;
 
     write_config_file($initdDist, $initdFile, %c);
     chmod $mode, $initdFile;
+}
+
+sub write_phpfpm_conf {
+    my %c = %{$cfg{nginx}};
+
+    $c{'APP_NAME'} = $cfg{phpmyadmin}{'APP_NAME'};
+
+    write_config_file($phpFpmDist, $phpFpmFile, %c);
 }
 
 sub write_force_ssl_conf {
@@ -240,7 +247,7 @@ sub merge_defaults {
         $cfg{phpmyadmin}{USER} = $ENV{"LOGNAME"};
     }
 
-        if (!exists($cfg{nginx}{USER})) {
+    if (!exists($cfg{nginx}{USER})) {
         $cfg{nginx}{USER} = $ENV{"LOGNAME"};
     }
 

@@ -193,13 +193,9 @@ sub install_symlinks {
     my ($dir) = @_;
     my $binDir = $dir . '/bin';
     my $optDir = $dir . '/opt';
-    my $vendorDir = $dir . '/src/vendor';
 
     unlink "$binDir/php";
     symlink("$optDir/php/bin/php", "$binDir/php");
-
-    unlink "$binDir/phpunit";
-    symlink("$vendorDir/bin/phpunit", "$binDir/phpunit");
 }
 
 # installs Perl Modules.

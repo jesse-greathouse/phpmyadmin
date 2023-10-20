@@ -17,7 +17,6 @@ use PhpMyAdmin::Utility qw(
 our @EXPORT_OK = qw(
     get_configuration
     save_configuration
-    parse_env_file
     write_config_file
 );
 

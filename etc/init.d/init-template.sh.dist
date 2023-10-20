@@ -74,7 +74,7 @@ running()
 
 start ()
 {
-   /sbin/runuser __USER__ -s /bin/bash -c __START_SCRIPT__
+   /sbin/runuser __USER__ -s /bin/bash -c __START_SCRIPT__ --daemon
 }
 
 stop() {
