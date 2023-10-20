@@ -214,8 +214,8 @@ sub install_perl_modules {
 sub install_phpmyadmin {
     my ($dir) = @_;
     my $webDir = "$dir/web/";
-    my $configFile = "$dir/etc/config.php";
-    my $configSymLink = "$webDir/config.php";
+    my $configFile = "$dir/etc/config.inc.php";
+    my $configSymLink = "$webDir/config.inc.php";
 
     # If web/ exists, delete it.
     if (-d $webDir) {
@@ -231,8 +231,9 @@ sub install_phpmyadmin {
     # If etc/config.php exists, copy it to web/.
     if (-e $configFile) {
         unlink $configSymLink;
-        symlink($configFile, $configSymLink);
     }
+
+    symlink($configFile, $configSymLink);
 }
 
 sub cleanup {

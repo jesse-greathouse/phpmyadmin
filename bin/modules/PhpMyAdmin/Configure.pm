@@ -30,7 +30,7 @@ my $etcDir = "$applicationRoot/etc";
 my $logDir = "$varDir/log";
 my $uploadDir = "$varDir/upload";
 my $saveDir = "$varDir/cache";
-my $secret = `$binDir/php -r "echo bin2hex(random_bytes(16));"`;
+my $secret = `$binDir/php -r "echo sodium_bin2hex(random_bytes(32));"`;
 
 # Files and Dist
 my $errorLog = "$logDir/error.log";
@@ -39,8 +39,8 @@ my $sslCertificate = "$etcDir/ssl/certs/phpmyadmin.cert";
 my $sslKey = "$etcDir/ssl/private/phpmyadmin.key";
 
 my $phpMyAdminConfDist = "$etcDir/config.dist.php";
-my $phpMyAdminConfFile = "$etcDir/config.php";
-my $phpMyAdminConfSymlink = "$webDir/config.php";
+my $phpMyAdminConfFile = "$etcDir/config.inc.php";
+my $phpMyAdminConfSymlink = "$webDir/config.inc.php";
 
 my $initdDist = "$etcDir/init.d/init-template.sh.dist";
 my $initdFile = "$etcDir/init.d/phpmyadmin";
