@@ -61,6 +61,9 @@ my $opensslConfFile = "$etcDir/ssl/openssl.cnf";
 my $nginxConfDist = "$etcDir/nginx/nginx.dist.conf";
 my $nginxConfFile = "$etcDir/nginx/nginx.conf";
 
+my $supervisordServiceDist = "$etcDir/supervisor/conf.d/supervisord.service.conf.dist";
+my $supervisordServiceFile = "$etcDir/supervisor/conf.d/supervisord.service.conf";
+
 # Get Configuration and Defaults
 my %cfg = get_configuration();
 
@@ -118,6 +121,7 @@ sub configure {
     write_ssl_params_conf();
     write_openssl_conf();
     write_nginx_conf();
+    write_supervisord_service_conf();
 }
 
 sub write_phpmyadmin_conf {
@@ -168,6 +172,11 @@ sub write_nginx_conf {
     write_config_file($nginxConfDist, $nginxConfFile, %c);
 }
 
+sub write_supervisord_service_conf {
+    my %c = %{$cfg{supervisor}};
+    write_config_file($supervisordServiceDist, $supervisordServiceFile, %c);
+}
+
 # Runs the user through a series of setup config questions.
 # Confirms the answers.
 # Returns Hash Table
@@ -216,12 +225,18 @@ sub request_user_input {
         # SSL_KEY
         input('nginx', 'SSL_KEY', 'SSL Key Path');
         $cfg{nginx}{SSL_CERT_LINE} = 'ssl_certificate_key ' . $cfg{nginx}{SSL_KEY};
-
         $cfg{nginx}{INCLUDE_FORCE_SSL_LINE} = "include $etcDir/nginx/force-ssl.conf";
 
+        # SUPERVISORCTL_PORT
+        input('supervisor', 'SUPERVISORCTL_PORT', 'Application Control Port (5000 - 9000)');
     } else {
         # PORT
         input('nginx', 'PORT', 'Web Port');
+
+        # Configure supervisorctl port
+        my $portInt = int($cfg{nginx}{PORT});
+        $portInt++;
+        $cfg{supervisor}{SUPERVISORCTL_PORT} = "$portInt";
 
         $cfg{nginx}{SSL} = '';
         $cfg{nginx}{SSL_CERT_LINE} = '';
@@ -234,6 +249,14 @@ sub request_user_input {
 }
 
 sub merge_defaults {
+
+    if (!exists($cfg{supervisor}{SUPERVISORCTL_USER})) {
+        $cfg{supervisor}{SUPERVISORCTL_USER} = $ENV{"LOGNAME"};
+    }
+
+    if (!exists($cfg{supervisor}{SUPERVISORCTL_SECRET})) {
+        $cfg{supervisor}{SUPERVISORCTL_SECRET} = $secret;
+    }
 
     if (!exists($cfg{phpmyadmin}{USER})) {
         $cfg{phpmyadmin}{USER} = $ENV{"LOGNAME"};

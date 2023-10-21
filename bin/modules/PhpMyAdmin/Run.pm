@@ -6,10 +6,8 @@ use File::Basename;
 use Getopt::Long;
 use Cwd qw(getcwd abs_path);
 use Exporter 'import';
-use Term::ANSIScreen qw(cls);
 use lib(dirname(abs_path(__FILE__))  . "/../modules");
 use PhpMyAdmin::Config qw(get_configuration);
-use PhpMyAdmin::Utility qw(splash);
 
 our @EXPORT_OK = qw(run);
 
@@ -52,9 +50,11 @@ GetOptions (
 
 # Performs the install routine.
 sub run {
+    my ($isDaemon) = @_;
+
     my $supervisorConfig = $terminalSupervisor;
 
-    if ($daemon) {
+    if ($daemon or defined $isDaemon) {
         $supervisorConfig = $daemonSupervisor;
     }
 
@@ -80,9 +80,5 @@ sub run {
     my @cmd = ('supervisord');
     push @cmd, '-c';
     push @cmd, $supervisorConfig;
-
-    cls();
-    splash();
-
     system(@cmd);
 }
