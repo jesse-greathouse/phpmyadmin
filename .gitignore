@@ -1,5 +1,6 @@
 /vendor/
 /.vscode/
+.vstags
 node_modules/
 npm-debug.log
 yarn-error.log
